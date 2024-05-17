@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
 
     // Activity layout button
 
-
     // Activity Layout decleration end
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,8 +55,6 @@ public class MainActivity extends AppCompatActivity {
         mainScreen = findViewById(R.id.mainScreen);
         nevScreen = findViewById(R.id.nevScreen);
         imageButton = findViewById(R.id.nevButton);
-        hourlyWeatherRecyclerView = findViewById(R.id.hourlyWeatherRecyclerView);
-        weeklyWeatherRecyclerView = findViewById(R.id.weeklyWeatherRecyclerView);
 
         // Calculate screen width
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -71,8 +68,8 @@ public class MainActivity extends AppCompatActivity {
         imageButton.setOnClickListener(view -> {
             if (nevState) {
                 // Move from left of the screen to cover the screen
-                nevScreen.animate().translationX((float) (-screenWidth*0.2)).setDuration(1000).start();
-                mainScreen.animate().translationX((float) (screenWidth*0.8)).setDuration(1000).start();
+                nevScreen.animate().translationX((float) (-screenWidth * 0.2)).setDuration(1000).start();
+                mainScreen.animate().translationX((float) (screenWidth * 0.8)).setDuration(1000).start();
                 nevState = false;
             } else {
                 // Move from cover the screen to left of the screen
@@ -82,12 +79,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Initialize RecyclerViews
+        hourlyWeatherRecyclerView = findViewById(R.id.hourlyWeatherRecyclerView);
+        weeklyWeatherRecyclerView = findViewById(R.id.weeklyWeatherRecyclerView);
 
-        loadData();
+        hourlyWeatherRecyclerView.setHasFixedSize(true);
+        hourlyWeatherRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        RecyclerViewAdapter hourlyAdapter = new RecyclerViewAdapter(this, hourlyWeatherData);
+        hourlyWeatherRecyclerView.setAdapter(hourlyAdapter);
 
+        // Weekly RecyclerView setup (if used)
+        weeklyWeatherRecyclerView.setHasFixedSize(true);
+        weeklyWeatherRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        RecyclerViewAdapter weeklyAdapter = new RecyclerViewAdapter(this, dailyWeatherData);
+        weeklyWeatherRecyclerView.setAdapter(weeklyAdapter);
+
+        loadData(hourlyAdapter);
     }
 
-    public void loadData(){
+    public void loadData(RecyclerViewAdapter adapter) {
         TextView tempMainShow, weatherStatus, tempDesc, humidityVal, windSpeed, windDir, groundPressure, seaPressure, cloud, visibility, sunRise, sunSet, cityName;
         tempMainShow = findViewById(R.id.tempMainShow);
         weatherStatus = findViewById(R.id.weatherStatus);
@@ -119,49 +129,28 @@ public class MainActivity extends AppCompatActivity {
                 seaPressure.setText(String.format("%s HPa", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("sea_level")));
                 cloud.setText(String.format("%s %%", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("clouds").getString("all")));
                 visibility.setText(String.format("%s m", jsonObject.getJSONArray("list").getJSONObject(0).getString("visibility")));
-                sunRise.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunrise"));
-                sunSet.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunset"));
+                sunRise.setText(jsonObject.getJSONObject("city").getString("sunrise"));
+                sunSet.setText(jsonObject.getJSONObject("city").getString("sunset"));
 
-
-                for(int i = 0; i < 8; i++) {
+                for (int i = 0; i < 8; i++) {
                     JSONObject data = jsonObject.getJSONArray("list").getJSONObject(i);
-                    String time = data.getString("dt_txt");
-                    String icon = data.getJSONArray("weather").getJSONObject(0).getString("icon");
-                    float temp = (float) data.getJSONObject("main").getDouble("temp");
-                    float feelsLike = (float) data.getJSONObject("main").getDouble("feels_like");
-                    float tempMin = (float) data.getJSONObject("main").getDouble("temp_min");
-                    float tempMax = (float) data.getJSONObject("main").getDouble("temp_max");
-                    int humidity = data.getJSONObject("main").getInt("humidity");
-                    WeatherData weatherData = new WeatherData(time, icon, humidity, feelsLike, tempMax, tempMin);
+                    String time_ = data.getString("dt_txt");
+                    String icon_ = data.getJSONArray("weather").getJSONObject(0).getString("icon");
+                    float feelsLike_ = (float) data.getJSONObject("main").getDouble("feels_like");
+                    float tempMin_ = (float) data.getJSONObject("main").getDouble("temp_min");
+                    float tempMax_ = (float) data.getJSONObject("main").getDouble("temp_max");
+                    int humidity_ = data.getJSONObject("main").getInt("humidity");
+                    WeatherData weatherData = new WeatherData(time_, icon_, humidity_, feelsLike_, tempMax_, tempMin_);
                     hourlyWeatherData.add(weatherData);
                 }
-                hourlyWeatherRecyclerView.setHasFixedSize(true);
-                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-                hourlyWeatherRecyclerView.setLayoutManager(linearLayoutManager);
-                RecyclerViewAdapter recyclerViewAdapter = new RecyclerViewAdapter(MainActivity.this, hourlyWeatherData);
-                hourlyWeatherRecyclerView.setAdapter(recyclerViewAdapter);
 
-//        WeatherData weatherData = new WeatherData("12:00", "image", 23, 45.01f, 25.05f);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                dailyWeatherData.add(weatherData);
-//                weeklyWeatherRecyclerView.setHasFixedSize(true);
-//                linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-//                weeklyWeatherRecyclerView.setLayoutManager(linearLayoutManager);
-//                recyclerViewAdapter = new RecyclerViewAdapter(MainActivity.this, dailyWeatherData);
-//                weeklyWeatherRecyclerView.setAdapter(recyclerViewAdapter);
+                adapter.notifyDataSetChanged();
 
-            } catch (Exception e){
+            } catch (Exception e) {
                 Log.d(e.getMessage(), "vollyerror");
             }
         }, volleyError -> Log.d(volleyError.getMessage(), "megvolly"));
 
         requestQueue.add(jsonObjectRequest);
-
     }
 }

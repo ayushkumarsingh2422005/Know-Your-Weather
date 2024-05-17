@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,7 +31,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-
+        holder.rec
     }
 
     @Override
@@ -39,8 +40,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+        TextView rec_time, rec_humidity, rec_temp, rec_temp_desc;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            rec_time = itemView.findViewById(R.id.rec_time);
+            rec_temp = itemView.findViewById(R.id.rec_temp);
+            rec_humidity = itemView.findViewById(R.id.rec_humidity);
+            rec_temp_desc = itemView.findViewById(R.id.rec_temp_desc);
         }
 
         @Override
