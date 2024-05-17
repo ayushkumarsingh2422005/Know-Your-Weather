@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Know Your Weather</string>
+    <string name="empty">""</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="google_map_key" templateMergeStrategy="preserve" translatable="false">ihff</string>
+    <string name="todo">TODO</string>
+    <string name="spalsh_screen">spalsh screen</string>
 </resources>
