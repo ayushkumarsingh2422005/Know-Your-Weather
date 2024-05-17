@@ -1,10 +1,13 @@
 package com.ayush.knowyourweather;
 
+import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,17 +18,23 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.ayush.knowyourweather.WeatherData.WeatherData;
 import com.ayush.knowyourweather.recyclerViewAdapter.RecyclerViewAdapter;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     ConstraintLayout mainScreen, nevScreen;
@@ -33,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView hourlyWeatherRecyclerView, weeklyWeatherRecyclerView;
     private boolean nevState = true;
     private int screenWidth;
+    RecyclerViewAdapter recyclerViewAdapter;
     List<WeatherData> hourlyWeatherData = new ArrayList<>();
     List<WeatherData> dailyWeatherData = new ArrayList<>();
 
@@ -86,7 +96,15 @@ public class MainActivity extends AppCompatActivity {
         loadData();
 
     }
-
+public void loadRecyclerView()
+{
+    hourlyWeatherRecyclerView.setHasFixedSize(true);
+    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+    recyclerViewAdapter= new RecyclerViewAdapter(MainActivity.this, hourlyWeatherData);
+    hourlyWeatherRecyclerView.setAdapter(recyclerViewAdapter);
+    hourlyWeatherRecyclerView.setLayoutManager(linearLayoutManager);
+    Toast.makeText(MainActivity.this,"Recycler view adapters set",Toast.LENGTH_SHORT).show();
+}
     public void loadData(){
         TextView tempMainShow, weatherStatus, tempDesc, humidityVal, windSpeed, windDir, groundPressure, seaPressure, cloud, visibility, sunRise, sunSet, cityName;
         tempMainShow = findViewById(R.id.tempMainShow);
@@ -105,6 +123,67 @@ public class MainActivity extends AppCompatActivity {
 
         RequestQueue requestQueue;
         requestQueue = Volley.newRequestQueue(this);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET,
+                "https://api.openweathermap.org/data/2.5/forecast?q=chunar&units=Metric&appid=2786bf1db3b61f864ba9db93a491cbda" , null, new Response.Listener<JSONObject>() {
+
+            @SuppressLint("NotifyDataSetChanged")
+            @Override
+            public void onResponse(JSONObject jsonObject) {
+                try {
+                    cityName.setText(jsonObject.getJSONObject("city").getString("name"));
+                    tempMainShow.setText(String.format("%s°", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("temp")));
+                    weatherStatus.setText(jsonObject.getJSONArray("list").getJSONObject(0).getJSONArray("weather").getJSONObject(0).getString("main"));
+                    tempDesc.setText(String.format("%s° / %s° feels like %s°", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("temp_min"), jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("temp_max"), jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("feels_like")));
+                    humidityVal.setText(String.format("%s%%", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("humidity")));
+                    windSpeed.setText(String.format("%s m/sec", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("wind").getString("speed")));
+                    windDir.setText(String.format("%s deg", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("wind").getString("deg")));
+                    groundPressure.setText(String.format("%s HPa", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("grnd_level")));
+                    seaPressure.setText(String.format("%s HPa", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("sea_level")));
+                    cloud.setText(String.format("%s %%", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("clouds").getString("all")));
+                    visibility.setText(String.format("%s m", jsonObject.getJSONArray("list").getJSONObject(0).getString("visibility")));
+                    try {
+                        sunRise.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunrise"));
+                        sunSet.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunset"));
+                    }
+                    catch(Exception e)
+                    {
+                        Log.d("Error","Missing values");
+                    }
+
+                    for(int i = 0; i < 8; i++) {
+                        JSONObject data = jsonObject.getJSONArray("list").getJSONObject(i);
+                        String time = data.getString("dt_txt");
+                        String icon = data.getJSONArray("weather").getJSONObject(0).getString("icon");
+                        float temp = (float) data.getJSONObject("main").getDouble("temp");
+                        float feelsLike = (float) data.getJSONObject("main").getDouble("feels_like");
+                        float tempMin = (float) data.getJSONObject("main").getDouble("temp_min");
+                        float tempMax = (float) data.getJSONObject("main").getDouble("temp_max");
+                        int humidity = data.getJSONObject("main").getInt("humidity");
+                        WeatherData weatherData = new WeatherData(time, icon, humidity, feelsLike, tempMax, tempMin);
+                        hourlyWeatherData.add(weatherData);
+
+                    }
+                    Toast.makeText(MainActivity.this,"weather data set",Toast.LENGTH_SHORT).show();
+                    loadRecyclerView();
+                    recyclerViewAdapter.setDataChange(hourlyWeatherData);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+                Log.d("myapp", "Something went wrong");
+               Toast.makeText(MainActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
+            }
+        }) {
+        };
+        requestQueue.add(jsonObjectRequest);
+    }
+       /* RequestQueue requestQueue;
+        requestQueue = Volley.newRequestQueue(this);
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, "https://api.openweathermap.org/data/2.5/forecast?q=chunar&units=Metric&appid=2786bf1db3b61f864ba9db93a491cbda", null, jsonObject -> {
             try {
@@ -119,9 +198,14 @@ public class MainActivity extends AppCompatActivity {
                 seaPressure.setText(String.format("%s HPa", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("main").getString("sea_level")));
                 cloud.setText(String.format("%s %%", jsonObject.getJSONArray("list").getJSONObject(0).getJSONObject("clouds").getString("all")));
                 visibility.setText(String.format("%s m", jsonObject.getJSONArray("list").getJSONObject(0).getString("visibility")));
-                sunRise.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunrise"));
-                sunSet.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunset"));
-
+                try {
+                    sunRise.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunrise"));
+                    sunSet.setText(jsonObject.getJSONArray("list").getJSONObject(0).getString("sunset"));
+                }
+                catch(Exception e)
+                {
+                    Log.d("Error","Missing values");
+                }
 
                 for(int i = 0; i < 8; i++) {
                     JSONObject data = jsonObject.getJSONArray("list").getJSONObject(i);
@@ -136,11 +220,10 @@ public class MainActivity extends AppCompatActivity {
                     hourlyWeatherData.add(weatherData);
                 }
                 hourlyWeatherRecyclerView.setHasFixedSize(true);
-                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-                hourlyWeatherRecyclerView.setLayoutManager(linearLayoutManager);
+                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
                 RecyclerViewAdapter recyclerViewAdapter = new RecyclerViewAdapter(MainActivity.this, hourlyWeatherData);
                 hourlyWeatherRecyclerView.setAdapter(recyclerViewAdapter);
-
+                hourlyWeatherRecyclerView.setLayoutManager(linearLayoutManager);
 //        WeatherData weatherData = new WeatherData("12:00", "image", 23, 45.01f, 25.05f);
 //                dailyWeatherData.add(weatherData);
 //                dailyWeatherData.add(weatherData);
@@ -162,6 +245,6 @@ public class MainActivity extends AppCompatActivity {
         }, volleyError -> Log.d(volleyError.getMessage(), "megvolly"));
 
         requestQueue.add(jsonObjectRequest);
+*/
 
-    }
 }

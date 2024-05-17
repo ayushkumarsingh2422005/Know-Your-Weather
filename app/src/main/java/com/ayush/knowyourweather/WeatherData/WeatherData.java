@@ -1,8 +1,5 @@
 package com.ayush.knowyourweather.WeatherData;
 
-//public class WeatherData {
-//
-//}
 public class WeatherData {
     private String time;
     private String image;
@@ -25,11 +22,11 @@ public class WeatherData {
     public String getImage() {
         return image;
     }
-    public int getPricipatation() {
-        return pricipatation;
+    public String getPricipatation() {
+        return String.valueOf(pricipatation);
     }
-    public float getTemp() {
-        return temp;
+    public String getTemp() {
+        return String.valueOf(temp);
     }
     public float getTemp_max() {
         return temp_max;
